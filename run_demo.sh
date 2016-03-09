@@ -86,8 +86,8 @@ Category=ShardManager,name=shard-manager-config,type=DistributedConfigDatastore 
     echo "shard name is $shard_name"
 
     if [ -z $shard_name ]; then
-      echo "unable to find shard name for ${controller}"
-      exit 1
+      echo "Unable to find shard name for ${controller}. May be down..."
+      continue
     fi
 
     if curl --silent -u admin:admin http://${controller}:8181/jolokia/read/org.opendaylight.controller:Category=Shards,\
@@ -99,7 +99,7 @@ name=${shard_name},type=DistributedConfigDatastore | grep -Eo 'RaftState":"Leade
   done
 
   echo "Unable to find Leader...exiting"
-  return 1
+  exit 1
 
 }
 
