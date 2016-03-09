@@ -55,13 +55,12 @@ function clean_openstack(){
 }
 
 function run_test(){
-    test_name=$1
     echo -e "\n\n\n\n"
     echo "----------------------------------------------"
-    echo "  Running test case: $i"
+    echo "  Running test case: vPing"
     echo "----------------------------------------------"
     echo ""
-    info "Running vPing-userdata test... "
+    echo "Running vPing-userdata test... "
     python ./vPing_userdata.py --debug
 
 }
@@ -73,6 +72,12 @@ function setup_openstack_creds() {
   source overcloudrc
 }
 
+function ensure_resources() {
+  if [ -e ./cirros-0.3.4-x86_64-disk.img ]; then
+    wget http://download.cirros-cloud.net/0.3.4/cirros-0.3.4-x86_64-disk.img
+  fi
+
+}
 # Parse parameters
 while [[ $# > 0 ]]
     do
@@ -108,4 +113,5 @@ while [[ $# > 0 ]]
 done
 
 setup_openstack_creds
+ensure_resources
 run_test

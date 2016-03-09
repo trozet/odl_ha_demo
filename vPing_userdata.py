@@ -75,12 +75,10 @@ NAME_VM_2 = functest_yaml.get("vping").get("vm_name_2")
 # GLANCE_IMAGE_NAME = functest_yaml.get("general"). \
 #    get("openstack").get("image_name")
 GLANCE_IMAGE_NAME = "functest-vping"
-GLANCE_IMAGE_FILENAME = functest_yaml.get("general"). \
-    get("openstack").get("image_file_name")
+GLANCE_IMAGE_FILENAME = "cirros-0.3.4-x86_64-disk.img"
 GLANCE_IMAGE_FORMAT = functest_yaml.get("general"). \
     get("openstack").get("image_disk_format")
-GLANCE_IMAGE_PATH = functest_yaml.get("general"). \
-    get("directories").get("dir_functest_data") + "/" + GLANCE_IMAGE_FILENAME
+GLANCE_IMAGE_PATH = './'+GLANCE_IMAGE_FILENAME
 
 
 FLAVOR = functest_yaml.get("vping").get("vm_flavor")
