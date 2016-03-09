@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 #
 # Author: Jose Lausuch (jose.lausuch@ericsson.com)
 #         Morgan Richomme (morgan.richomme@orange.com)
@@ -56,16 +55,39 @@ function clean_openstack(){
     fi
 }
 
-function source_overcloud_creds(){
+function get_instack_ip(){
     instack_ip=$(arp -a | grep $(virsh domiflist instack | grep default | awk '{print $5}') | grep -Eo "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+")
+    echo $instack_ip
+}
+
+function source_overcloud_creds(){
+    instack_ip=$(get_instack_ip)
     scp root@$instack_ip:/home/stack/overcloudrc .
     source overcloudrc
 }
 
 function source_undercloud_creds(){
-    instack_ip=$(arp -a | grep $(virsh domiflist instack | grep default | awk '{print $5}') | grep -Eo "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+")
+    instack_ip=$(get_instack_ip)
     scp root@$instack_ip:/home/stack/stackrc .
     source stackrc
+    export OS_PASSWORD=$(ssh root@$instack_ip "hiera admin_password")
+}
+
+function push_ssh_auth_to_overcloud_vms(){
+    instack_ip=$(get_instack_ip)
+    authorized_keys=$(ssh root@$instack_ip "cat .ssh/authorized_keys")
+    # TODO: fix the fact that as this script runs over and over it is going
+    # to add keys to authorized_keys file, slowly building up over time.
+    # how can we just overwrite them, without wiping out the original
+    # key that is there?
+    # TODO: this is also assuming the ip addresses on all the nodes.  Maybe
+    # this is fine for the demo, but it wont work in any other environment
+    # most likely
+    ssh root@$instack_ip "sudo -u stack ssh heat-admin@192.0.2.4 \"echo '$authorized_keys' >> .ssh/authorized_keys\""
+    ssh root@$instack_ip "sudo -u stack ssh heat-admin@192.0.2.5 \"echo '$authorized_keys' >> .ssh/authorized_keys\""
+    ssh root@$instack_ip "sudo -u stack ssh heat-admin@192.0.2.6 \"echo '$authorized_keys' >> .ssh/authorized_keys\""
+    ssh root@$instack_ip "sudo -u stack ssh heat-admin@192.0.2.7 \"echo '$authorized_keys' >> .ssh/authorized_keys\""
+    ssh root@$instack_ip "sudo -u stack ssh heat-admin@192.0.2.8 \"echo '$authorized_keys' >> .ssh/authorized_keys\""
 }
 
 function run_test(){
@@ -75,6 +97,7 @@ function run_test(){
     echo "----------------------------------------------"
     echo ""
     echo "Running vPing-userdata test... "
+    push_ssh_auth_to_overcloud_vms
     source_overcloud_creds
     python ./vPing_userdata.py --debug
 
@@ -115,7 +138,7 @@ name=${shard_name},type=DistributedConfigDatastore | grep -Eo 'RaftState":"Leade
 
 }
 
-function start_odl_all() {
+function start_all_odl() {
   source_undercloud_creds
   controllers=$(nova list | grep controller | grep -Eo "[0-9]+\.[0-9]\.[0-9]\.[0-9]")
 
