@@ -22,6 +22,7 @@ import sys
 import logging
 import yaml
 import datetime
+import functest_utils
 from novaclient import client as novaclient
 from neutronclient.v2_0 import client as neutronclient
 from keystoneclient.v2_0 import client as keystoneclient
@@ -59,14 +60,7 @@ formatter = logging.Formatter('%(asctime)s - %(name)s'
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 
-REPO_PATH = os.environ['repos_dir']+'/functest/'
-if not os.path.exists(REPO_PATH):
-    logger.error("Functest repository directory not found '%s'" % REPO_PATH)
-    exit(-1)
-sys.path.append(REPO_PATH + "testcases/")
-import functest_utils
-
-with open("/home/opnfv/functest/conf/config_functest.yaml") as f:
+with open("./config_functest.yaml") as f:
     functest_yaml = yaml.safe_load(f)
 f.close()
 
@@ -202,6 +196,7 @@ def create_private_neutron_net(neutron):
                    'subnet_id': subnet_id,
                    'router_id': router_id}
     return network_dic
+
 
 def create_security_group(neutron_client):
     sg_id = functest_utils.get_security_group_id(neutron_client, SECGROUP_NAME)

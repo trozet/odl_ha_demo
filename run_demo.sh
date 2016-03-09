@@ -1,5 +1,5 @@
 #!/bin/bash
-set errexit
+set -e
 #
 # Author: Jose Lausuch (jose.lausuch@ericsson.com)
 #         Morgan Richomme (morgan.richomme@orange.com)
@@ -107,7 +107,5 @@ while [[ $# > 0 ]]
     shift # past argument or value
 done
 
-# Source credentials
-info "Sourcing Credentials ./openstack.creds to run the tests.."
 setup_openstack_creds
 run_test
