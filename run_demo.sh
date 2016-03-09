@@ -56,6 +56,18 @@ function clean_openstack(){
     fi
 }
 
+function source_overcloud_creds(){
+    instack_ip=$(arp -a | grep $(virsh domiflist instack | grep default | awk '{print $5}') | grep -Eo "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+")
+    scp root@$instack_ip:/home/stack/overcloudrc .
+    source overcloudrc
+}
+
+function source_undercloud_creds(){
+    instack_ip=$(arp -a | grep $(virsh domiflist instack | grep default | awk '{print $5}') | grep -Eo "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+")
+    scp root@$instack_ip:/home/stack/stackrc .
+    source stackrc
+}
+
 function run_test(){
     echo -e "\n\n\n\n"
     echo "----------------------------------------------"
@@ -63,7 +75,7 @@ function run_test(){
     echo "----------------------------------------------"
     echo ""
     echo "Running vPing-userdata test... "
-    source /home/stack/overcloudrc
+    source_overcloud_creds
     python ./vPing_userdata.py --debug
 
 }
@@ -77,7 +89,7 @@ function ensure_resources() {
 
 function shutdown_odl_leader() {
   # figure out ODL leader
-  source /home/stack/stackrc
+  source_undercloud_creds
   controllers=$(nova list | grep controller | grep -Eo "[0-9]+\.[0-9]\.[0-9]\.[0-9]")
 
   for controller in $controllers; do
@@ -104,7 +116,7 @@ name=${shard_name},type=DistributedConfigDatastore | grep -Eo 'RaftState":"Leade
 }
 
 function start_odl_all() {
-  source /home/stack/stackrc
+  source_undercloud_creds
   controllers=$(nova list | grep controller | grep -Eo "[0-9]+\.[0-9]\.[0-9]\.[0-9]")
 
   for controller in $controllers; do
@@ -158,3 +170,4 @@ start_all_odl
 sleep 30
 run_test
 echo "Bounced ODL Ping Test Complete"
+
