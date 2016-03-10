@@ -12,7 +12,17 @@
 # http://www.apache.org/licenses/LICENSE-2.0
 #
 
-SSH_OPTIONS=(-o StrictHostKeyChecking=no -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o LogLevel=error)
+if [ "$TERM" != "unknown" ]; then
+  reset=$(tput sgr0)
+  blue=$(tput setaf 4)
+  red=$(tput setaf 1)
+  green=$(tput setaf 2)
+else
+  reset=""
+  blue=""
+  red=""
+  green=""
+fi
 
 usage="Script to trigger the tests automatically.
 
@@ -143,8 +153,26 @@ function start_all_odl() {
   controllers=$(nova list | grep controller | grep -Eo "[0-9]+\.[0-9]\.[0-9]\.[0-9]")
 
   for controller in $controllers; do
+    ssh -T -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "heat-admin@$controller" << EOI
+if ! sudo systemctl status opendaylight > /dev/null; then
+sudo systemctl start opendaylight
+echo "OpenDaylight started on ${controller}"
+fi
+EOI
     ssh -T -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "heat-admin@$controller" "sudo systemctl start opendaylight"
   done
+
+}
+
+function prompt_user() {
+  read -p "Press any key to continue..."
+}
+
+#arg: message to print
+function pprint() {
+  echo -e "${blue}######################################${reset}"
+  echo -e "${blue}${1}${reset}"
+  echo -e "${blue}######################################${reset}"
 
 }
 # Parse parameters
@@ -184,13 +212,21 @@ done
 ensure_resources
 run_test
 echo "Initial Ping Test Complete"
+pprint "Ready to shutdown ODL Leader"
+prompt_user
 shutdown_odl_leader
 sleep 5
+pprint "Ready to run Leader Down Ping Test"
+prompt_user
 run_test
-echo "Leader Down Ping Test Complete"
+pprint "Leader Down Ping Test Complete"
 sleep 5
-start_all_odl
+pprint "Ready to restart downed ODL Node"
+prompt_user
+start_odl_all
+pprint "Waiting 30 seconds for ODL to start"
 sleep 30
+pprint "Ready to run Bounced ODL Ping Test"
+prompt_user
 run_test
-echo "Bounced ODL Ping Test Complete"
-
+pprint "Bounced ODL Ping Test Complete"
