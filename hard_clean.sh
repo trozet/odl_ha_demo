@@ -1,3 +1,28 @@
+Medium cleanup (I think)
+
+while ODL running, make sure all openstack stuff is deleted
+
+del-manager
+
+stop ovs
+
+stop odl, rm -rf data snapshots journal
+
+start ovs
+
+start odl....wait until we are confident (egrep 'Successfully pushed.*netv' on karaf.log is probably the thing)
+
+set-manager
+
+
+Seems to work, at least once.  Notice there is no scrubbing of neutron DB or deleting the ovs conf.db
+I was worried because this would leave the vxlan ports on br-int and I didn't know of ODL would be happy
+about that or not.  I guess it's dealing with it fine.
+
+
+
+
+
 > Major cleanup:
 > --------------
 > for each $NODE:

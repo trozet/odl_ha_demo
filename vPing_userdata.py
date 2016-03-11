@@ -158,6 +158,7 @@ def create_private_neutron_net(neutron):
         logger.info('Creating neutron network %s...' % NEUTRON_PRIVATE_NET_NAME)
         network_id = functest_utils. \
             create_neutron_net(neutron, NEUTRON_PRIVATE_NET_NAME)
+        time.sleep(1)
 
         if not network_id:
             return False
@@ -168,12 +169,14 @@ def create_private_neutron_net(neutron):
                                   NEUTRON_PRIVATE_SUBNET_NAME,
                                   NEUTRON_PRIVATE_SUBNET_CIDR,
                                   network_id)
+        time.sleep(1)
         if not subnet_id:
             return False
         logger.debug("Subnet '%s' created successfully" % subnet_id)
         logger.debug('Creating Router...')
         router_id = functest_utils. \
             create_neutron_router(neutron, NEUTRON_ROUTER_NAME)
+        time.sleep(1)
 
         if not router_id:
             return False
@@ -185,10 +188,10 @@ def create_private_neutron_net(neutron):
             return False
         logger.debug("Interface added successfully.")
 
-        logger.debug('Adding gateway to router...')
-        if not functest_utils.add_gateway_router(neutron, router_id):
-            return False
-        logger.debug("Gateway added successfully.")
+#        logger.debug('Adding gateway to router...')
+#        if not functest_utils.add_gateway_router(neutron, router_id):
+#            return False
+#        logger.debug("Gateway added successfully.")
 
     network_dic = {'net_id': network_id,
                    'subnet_id': subnet_id,
@@ -209,6 +212,7 @@ def create_security_group(neutron_client):
             logger.error("Failed to create the security group...")
             return False
 
+        time.sleep(1)
         sg_id = SECGROUP['id']
 
         logger.debug("Security group '%s' with ID=%s created successfully." %\
@@ -220,16 +224,20 @@ def create_security_group(neutron_client):
             logger.error("Failed to create the security group rule...")
             return False
 
+        time.sleep(1)
         logger.debug("Adding SSH rules in security group '%s'..." % SECGROUP_NAME)
         if not functest_utils.create_secgroup_rule(neutron_client, sg_id, \
                         'ingress', 'tcp', '22', '22'):
             logger.error("Failed to create the security group rule...")
             return False
 
+        time.sleep(1)
         if not functest_utils.create_secgroup_rule(neutron_client, sg_id, \
                         'egress', 'tcp', '22', '22'):
             logger.error("Failed to create the security group rule...")
             return False
+
+        time.sleep(1)
     return sg_id
 
 
@@ -256,6 +264,7 @@ def cleanup(nova, neutron, image_id, network_dic):
         else:
             logger.debug("Instance %s terminated." % NAME_VM_1)
 
+    time.sleep(1)
     vm2 = functest_utils.get_instance_by_name(nova, NAME_VM_2)
 
     if vm2:
@@ -270,6 +279,7 @@ def cleanup(nova, neutron, image_id, network_dic):
         else:
             logger.debug("Instance %s terminated." % NAME_VM_2)
 
+    time.sleep(1)
     # delete created network
     logger.info("Deleting network '%s'..." % NEUTRON_PRIVATE_NET_NAME)
     net_id = network_dic["net_id"]
@@ -282,6 +292,7 @@ def cleanup(nova, neutron, image_id, network_dic):
             subnet_id, router_id))
         return False
 
+    time.sleep(1)
     logger.debug("Interface removed successfully")
     if not functest_utils.delete_neutron_router(neutron, router_id):
         logger.error("Unable to delete router '%s'" % router_id)
@@ -289,6 +300,7 @@ def cleanup(nova, neutron, image_id, network_dic):
 
     logger.debug("Router deleted successfully")
 
+    time.sleep(1)
     if not functest_utils.delete_neutron_subnet(neutron, subnet_id):
         logger.error("Unable to delete subnet '%s'" % subnet_id)
         return False
@@ -296,6 +308,7 @@ def cleanup(nova, neutron, image_id, network_dic):
     logger.debug(
         "Subnet '%s' deleted successfully" % NEUTRON_PRIVATE_SUBNET_NAME)
 
+    time.sleep(1)
     if not functest_utils.delete_neutron_net(neutron, net_id):
         logger.error("Unable to delete network '%s'" % net_id)
         return False
@@ -303,6 +316,7 @@ def cleanup(nova, neutron, image_id, network_dic):
     logger.debug(
         "Network '%s' deleted successfully" % NEUTRON_PRIVATE_NET_NAME)
 
+    time.sleep(1)
     return True
 
 
@@ -361,9 +375,11 @@ def main():
         logger.error(
             "There has been a problem when creating the neutron network")
         return(EXIT_CODE)
+    time.sleep(1)
     network_id = network_dic["net_id"]
 
     sg_id = create_security_group(neutron_client)
+    time.sleep(1)
 
     # Check if the given flavor exists
     try:
@@ -404,6 +420,8 @@ def main():
         image=image_id,
         nics=[{"net-id": network_id}]
     )
+    time.sleep(5)  
+    vm1.add_security_group(sg_id)
 
     # wait until VM status is active
     if not waitVmActive(nova_client, vm1):
@@ -441,6 +459,8 @@ def main():
         nics=[{"net-id": network_id}],
         userdata=u
     )
+    time.sleep(5)
+    vm2.add_security_group(sg_id)
 
     if not waitVmActive(nova_client, vm2):
         logger.error("Instance '%s' cannot be booted. Status is '%s'" % (
@@ -464,6 +484,8 @@ def main():
         # report if the test is failed
         if "vPing OK" in console_log:
             logger.info("vPing detected!")
+
+            raw_input("VM to VM ping was successful.  Pausing here for illustration")
 
             # we consider start time at VM1 booting
             end_time_ts = time.time()

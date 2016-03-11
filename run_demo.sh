@@ -107,7 +107,6 @@ function run_test(){
     echo "----------------------------------------------"
     echo ""
     echo "Running vPing-userdata test... "
-    push_ssh_auth_to_overcloud_vms
     source_overcloud_creds
     python ./vPing_userdata.py --debug
 
@@ -138,7 +137,7 @@ Category=ShardManager,name=shard-manager-config,type=DistributedConfigDatastore 
     if curl --silent -u admin:admin http://${controller}:8181/jolokia/read/org.opendaylight.controller:Category=Shards,\
 name=${shard_name},type=DistributedConfigDatastore | grep -Eo 'RaftState":"Leader"'; then
       echo "Shutting down ODL Leader: ${controller} Shard: $shard_name"
-      ssh -T -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "heat-admin@$controller" "sudo systemctl stop opendaylight"
+      ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "heat-admin@$controller" "sudo /opt/opendaylight/bin/stop"
       return
     fi
   done
@@ -153,13 +152,16 @@ function start_all_odl() {
   controllers=$(nova list | grep controller | grep -Eo "[0-9]+\.[0-9]\.[0-9]\.[0-9]")
 
   for controller in $controllers; do
-    ssh -T -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "heat-admin@$controller" << EOI
-if ! sudo systemctl status opendaylight > /dev/null; then
-sudo systemctl start opendaylight
-echo "OpenDaylight started on ${controller}"
-fi
-EOI
-    ssh -T -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "heat-admin@$controller" "sudo systemctl start opendaylight"
+
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "heat-admin@$controller" "pgrep java"
+    if [ $? -eq 1 ]
+    then
+      echo "starting controller @ $controller"
+      ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "heat-admin@$controller" "sudo /opt/opendaylight/bin/start"
+    else
+      echo "controller @ $controller is already running."
+    fi
+
   done
 
 }
@@ -210,6 +212,7 @@ while [[ $# > 0 ]]
 done
 
 ensure_resources
+push_ssh_auth_to_overcloud_vms
 run_test
 echo "Initial Ping Test Complete"
 pprint "Ready to shutdown ODL Leader"
@@ -223,7 +226,7 @@ pprint "Leader Down Ping Test Complete"
 sleep 5
 pprint "Ready to restart downed ODL Node"
 prompt_user
-start_odl_all
+start_all_odl
 pprint "Waiting 30 seconds for ODL to start"
 sleep 30
 pprint "Ready to run Bounced ODL Ping Test"
