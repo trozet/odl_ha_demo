@@ -185,10 +185,10 @@ def create_private_neutron_net(neutron):
             return False
         logger.debug("Interface added successfully.")
 
-        logger.debug('Adding gateway to router...')
-        if not functest_utils.add_gateway_router(neutron, router_id):
-            return False
-        logger.debug("Gateway added successfully.")
+#        logger.debug('Adding gateway to router...')
+#        if not functest_utils.add_gateway_router(neutron, router_id):
+#            return False
+#        logger.debug("Gateway added successfully.")
 
     network_dic = {'net_id': network_id,
                    'subnet_id': subnet_id,

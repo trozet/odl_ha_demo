@@ -123,7 +123,6 @@ sudo systemctl start opendaylight
 echo "OpenDaylight started on ${controller}"
 fi
 EOI
-    ssh -T -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "heat-admin@$controller" "sudo systemctl start opendaylight"
   done
 
 }
